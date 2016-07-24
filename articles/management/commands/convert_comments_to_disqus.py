@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.contrib.comments.models import Comment
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.sites.models import Site
 from django.core.management.base import NoArgsCommand
 from articles.models import Article
 import simplejson as json
@@ -109,13 +108,13 @@ class Command(NoArgsCommand):
                     'thread_id': thread['id'],
                     'title': article.title,
                     'url': 'http://%s%s' % (
-                        Site.objects.get_current().domain,
+                        settings.SITE_DOMAIN,
                         article.get_absolute_url()),
                 }, method='POST')
                 print 'Created new thread for %s' % article.title
 
             # create the comment on disqus
-            comment_obj = self.get_value_from_api('create_post', {
+            self.get_value_from_api('create_post', {
                 'thread_id': thread['id'],
                 'message': comment.comment,
                 'author_name': comment.user_name,

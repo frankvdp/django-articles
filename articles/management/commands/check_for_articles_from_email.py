@@ -4,12 +4,10 @@ from email.parser import FeedParser
 from email.utils import parseaddr, parsedate
 from optparse import make_option
 import socket
-import sys
 import time
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 from django.utils.translation import ugettext_lazy as _
 
@@ -338,7 +336,6 @@ class Command(BaseCommand):
         """
 
         created = []
-        site = Site.objects.get_current()
 
         ack = self.config.get('acknowledge', False)
         autopost = self.config.get('autopost', False)
@@ -418,8 +415,8 @@ class Command(BaseCommand):
 
     http://%(domain)s%(article_url)s""") % {
                     'title': title,
-                    'site_name': site.name,
-                    'domain': site.domain,
+                    'site_name': settings.SITE_NAME,
+                    'domain': settings.SITE_DOMAIN,
                     'article_url': article.get_absolute_url(),
                 }
 

@@ -1,10 +1,10 @@
 {% extends 'articles/base.html' %}
 {% load i18n %}
 
-{% block title %}{% trans 'Articles By Author' %}: {{ author.get_name }}{% endblock %}
+{% block title %}{% trans 'Articles by author' %}: {{ author.name }}{% endblock %}
 
-{% block articles-content %}
-<h2>{% trans 'Articles By' %} {{ author.get_name }}{% ifnotequal paginator.num_pages 1 %}, {% trans 'page' %} {{ page_obj.number }}{% endifnotequal %}</h2>
+{% block articles_content %}
+<h2>{% trans 'Articles by' %} {{ author.name }}{% ifnotequal paginator.num_pages 1 %}, {% trans 'page' %} {{ page_obj.number }}{% endifnotequal %}</h2>
 
 {% for article in page_obj.object_list %}
 {% include 'articles/_articles.html' %}

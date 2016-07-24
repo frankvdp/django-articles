@@ -1,41 +1,11 @@
 from django import template
 from django.core.cache import cache
 from django.core.urlresolvers import resolve, reverse, Resolver404
-from django.db.models import Count
-from articles.models import Article, Tag
+from articles.models import Article
 from datetime import datetime
 import math
 
 register = template.Library()
-
-
-class GetCategoriesNode(template.Node):
-    """
-    Retrieves a list of live article tags and places it into the context
-    """
-    def __init__(self, varname):
-        self.varname = varname
-
-    def render(self, context):
-        tags = Tag.objects.all()
-        context[self.varname] = tags
-        return ''
-
-
-def get_article_tags(parser, token):
-    """
-    Retrieves a list of live article tags and places it into the context
-    """
-    args = token.split_contents()
-    argc = len(args)
-
-    try:
-        assert argc == 3 and args[1] == 'as'
-    except AssertionError:
-        raise template.TemplateSyntaxError(
-            'get_article_tags syntax: {% get_article_tags as varname %}')
-
-    return GetCategoriesNode(args[2])
 
 
 class GetArticlesNode(template.Node):
@@ -315,43 +285,8 @@ def get_page_url(parser, token):
     return GetPageURLNode(args[1], varname)
 
 
-def tag_cloud():
-    """Provides the tags with a "weight" attribute to build a tag cloud"""
-
-    cache_key = 'tag_cloud_tags'
-    tags = cache.get(cache_key)
-    if tags is None:
-        MAX_WEIGHT = 7
-        tags = Tag.objects.annotate(count=Count('article'))
-
-        if len(tags) == 0:
-            # go no further
-            return {}
-
-        min_count = max_count = tags[0].article_set.count()
-        for tag in tags:
-            if tag.count < min_count:
-                min_count = tag.count
-            if max_count < tag.count:
-                max_count = tag.count
-
-        # calculate count range, and avoid dbz
-        _range = float(max_count - min_count)
-        if _range == 0.0:
-            _range = 1.0
-
-        # calculate tag weights
-        for tag in tags:
-            tag.weight = int(MAX_WEIGHT * (tag.count - min_count) / _range)
-
-        cache.set(cache_key, tags)
-
-    return {'tags': tags}
-
 # register dem tags!
 register.tag(get_articles)
-register.tag(get_article_tags)
 register.tag(get_article_archives)
 register.tag(divide_object_list)
 register.tag(get_page_url)
-register.inclusion_tag('articles/_tag_cloud.html')(tag_cloud)
