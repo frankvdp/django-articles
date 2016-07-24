@@ -13,6 +13,7 @@ import urllib2
 
 NONPRINTABLE_RE = re.compile('[^%s]' % string.printable)
 
+
 class Command(NoArgsCommand):
     help = """Imports any comments from django.contrib.comments into Disqus."""
     _forum_api_key = {}
@@ -20,7 +21,8 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **opts):
         if hasattr(settings, 'DISQUS_USER_API_KEY'):
             self.forum_id = self.determine_forum()
-            #print self.get_value_from_api('get_thread_list', {'forum_id': self.forum_id, 'limit': 1000})
+            # print self.get_value_from_api(
+            # 'get_thread_list', {'forum_id': self.forum_id, 'limit': 1000})
             self.import_comments(self.forum_id)
         else:
             sys.exit('Please specify your DISQUS_USER_API_KEY in settings.py')
@@ -75,14 +77,17 @@ class Command(NoArgsCommand):
                 for forum in forums:
                     print '\t%s. %s' % (forum['id'], forum['name'])
 
-                forum_id = raw_input('\nInto which forum do you want to import your existing comments? ')
+                forum_id = raw_input(
+                    '\nInto which forum do you want to import '
+                    'your existing comments? ')
 
         return forum_id
 
     @property
     def forum_api_key(self):
         if not self._forum_api_key.get(self.forum_id, None):
-            self._forum_api_key[self.forum_id] = self.get_value_from_api('get_forum_api_key', {'forum_id': self.forum_id})
+            self._forum_api_key[self.forum_id] = self.get_value_from_api(
+                'get_forum_api_key', {'forum_id': self.forum_id})
         return self._forum_api_key[self.forum_id]
 
     def import_comments(self, forum_id):
@@ -91,7 +96,10 @@ class Command(NoArgsCommand):
         article_ct = ContentType.objects.get_for_model(Article)
         for comment in Comment.objects.filter(content_type=article_ct):
             article = comment.content_object
-            thread_obj = self.get_value_from_api('thread_by_identifier', {'identifier': article.id, 'title': article.title, 'forum_api_key': self.forum_api_key}, method='POST')
+            thread_obj = self.get_value_from_api(
+                'thread_by_identifier', {
+                    'identifier': article.id, 'title': article.title,
+                    'forum_api_key': self.forum_api_key}, method='POST')
 
             thread = thread_obj['thread']
             if thread_obj['created']:
@@ -100,7 +108,9 @@ class Command(NoArgsCommand):
                     'forum_api_key': self.forum_api_key,
                     'thread_id': thread['id'],
                     'title': article.title,
-                    'url': 'http://%s%s' % (Site.objects.get_current().domain, article.get_absolute_url()),
+                    'url': 'http://%s%s' % (
+                        Site.objects.get_current().domain,
+                        article.get_absolute_url()),
                 }, method='POST')
                 print 'Created new thread for %s' % article.title
 
@@ -117,17 +127,27 @@ class Command(NoArgsCommand):
                 'state': self.get_state(comment)
             }, method='POST')
 
-            print 'Imported comment for %s by %s on %s' % (article, comment.user_name, comment.submit_date)
+            print 'Imported comment for %s by %s on %s' % (
+                article, comment.user_name, comment.submit_date)
 
     def get_state(self, comment):
-        """Determines a comment's state on Disqus based on its properties in Django"""
+        """
+        Determines a comment's state on Disqus based on
+        its properties in Django
+        """
 
         if comment.is_public and not comment.is_removed:
-            return 'approved'
-        elif comment.is_public and comment.is_removed:
-            return 'killed'
-        elif not comment.is_public and not comment.is_removed:
-            return 'unapproved'
-        else:
-            return 'spam'
 
+            return 'approved'
+
+        elif comment.is_public and comment.is_removed:
+
+            return 'killed'
+
+        elif not comment.is_public and not comment.is_removed:
+
+            return 'unapproved'
+
+        else:
+
+            return 'spam'

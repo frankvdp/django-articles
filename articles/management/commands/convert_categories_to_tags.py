@@ -1,6 +1,7 @@
 from django.core.management.base import NoArgsCommand
 from articles.models import Article, Tag
 
+
 class Command(NoArgsCommand):
     help = """Converts our old categories into tags"""
 
@@ -20,4 +21,3 @@ WHERE aac.article_id=%s""", (article.id,))
             tags = [Tag.objects.get_or_create(name=t)[0] for t in names]
             article.tags = tags
             article.save()
-

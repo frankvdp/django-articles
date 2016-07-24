@@ -7,9 +7,12 @@ from models import Article, Tag
 
 log = logging.getLogger('articles.listeners')
 
+
 @logtime
 def apply_new_tag(sender, instance, created, using='default', **kwargs):
-    """Applies new tags to existing articles that are marked for auto-tagging"""
+    """
+    Applies new tags to existing articles that are marked for auto-tagging
+    """
 
     # attempt to find all articles that contain the new tag
     # TODO: make sure this is standard enough... seems that both MySQL and
@@ -27,7 +30,9 @@ def apply_new_tag(sender, instance, created, using='default', **kwargs):
 
     log.debug('Found %s matches' % len(applicable_articles))
     for article in applicable_articles:
-        log.debug('Applying Tag "%s" (%s) to Article "%s" (%s)' % (instance, instance.pk, article.title, article.pk))
+        log.debug(
+            'Applying Tag "%s" (%s) to Article "%s" (%s)' % (
+                instance, instance.pk, article.title, article.pk))
         article.tags.add(instance)
         article.save()
 

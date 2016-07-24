@@ -8,6 +8,7 @@ import math
 
 register = template.Library()
 
+
 class GetCategoriesNode(template.Node):
     """
     Retrieves a list of live article tags and places it into the context
@@ -20,6 +21,7 @@ class GetCategoriesNode(template.Node):
         context[self.varname] = tags
         return ''
 
+
 def get_article_tags(parser, token):
     """
     Retrieves a list of live article tags and places it into the context
@@ -30,9 +32,11 @@ def get_article_tags(parser, token):
     try:
         assert argc == 3 and args[1] == 'as'
     except AssertionError:
-        raise template.TemplateSyntaxError('get_article_tags syntax: {% get_article_tags as varname %}')
+        raise template.TemplateSyntaxError(
+            'get_article_tags syntax: {% get_article_tags as varname %}')
 
     return GetCategoriesNode(args[2])
+
 
 class GetArticlesNode(template.Node):
     """
@@ -48,7 +52,8 @@ class GetArticlesNode(template.Node):
 
         {% get_articles 1 to 5 as varname asc %}
     """
-    def __init__(self, varname, count=None, start=None, end=None, order='desc'):
+    def __init__(self, varname, count=None, start=None,
+                 end=None, order='desc'):
         self.count = count
         self.start = start
         self.end = end
@@ -65,22 +70,28 @@ class GetArticlesNode(template.Node):
         user = context.get('user', None)
 
         # get the live articles in the appropriate order
-        articles = Article.objects.live(user=user).order_by(order).select_related()
+        articles = Article.objects.live(
+            user=user).order_by(order).select_related()
 
         if self.count:
-            # if we have a number of articles to retrieve, pull the first of them
+            # if we have a number of articles to retrieve,
+            # pull the first of them
             articles = articles[:int(self.count)]
+
         else:
             # get a range of articles
             articles = articles[(int(self.start) - 1):int(self.end)]
 
         # don't send back a list when we really don't need/want one
         if len(articles) == 1 and not self.start and int(self.count) == 1:
+
             articles = articles[0]
 
         # put the article(s) into the context
         context[self.varname] = articles
+
         return ''
+
 
 def get_articles(parser, token):
     """
@@ -90,23 +101,37 @@ def get_articles(parser, token):
     argc = len(args)
 
     try:
-        assert argc in (4,6) or (argc in (5,7) and args[-1].lower() in ('desc', 'asc'))
+        assert (
+            argc in (4, 6) or (argc in (5, 7) and args[-1].lower() in (
+                'desc', 'asc')))
+
     except AssertionError:
+
         raise template.TemplateSyntaxError('Invalid get_articles syntax.')
 
     # determine what parameters to use
     order = 'desc'
     count = start = end = varname = None
-    if argc == 4: t, count, a, varname = args
-    elif argc == 5: t, count, a, varname, order = args
-    elif argc == 6: t, start, t, end, a, varname = args
-    elif argc == 7: t, start, t, end, a, varname, order = args
 
-    return GetArticlesNode(count=count,
-                           start=start,
-                           end=end,
-                           order=order,
-                           varname=varname)
+    if argc == 4:
+
+        t, count, a, varname = args
+
+    elif argc == 5:
+
+        t, count, a, varname, order = args
+
+    elif argc == 6:
+
+        t, start, t, end, a, varname = args
+
+    elif argc == 7:
+
+        t, start, t, end, a, varname, order = args
+
+    return GetArticlesNode(count=count, start=start, end=end,
+                           order=order, varname=varname)
+
 
 class GetArticleArchivesNode(template.Node):
     """
@@ -127,11 +152,12 @@ class GetArticleArchivesNode(template.Node):
                 pub = article.publish_date
 
                 # see if we already have an article in this year
-                if not archives.has_key(pub.year):
+                if pub.year not in archives:
                     # if not, initialize a dict for the year
                     archives[pub.year] = {}
 
-                # make sure we know that we have an article posted in this month/year
+                # make sure we know that we have an article posted
+                # in this month/year
                 archives[pub.year][pub.month] = True
 
             dt_archives = []
@@ -153,13 +179,14 @@ class GetArticleArchivesNode(template.Node):
                 months = [datetime(year, month, 1) for month in m]
 
                 # append this list to our final collection
-                dt_archives.append( ( year, tuple(months) ) )
+                dt_archives.append((year, tuple(months)))
 
             cache.set(cache_key, dt_archives)
 
         # put our collection into the context
         context[self.varname] = dt_archives
         return ''
+
 
 def get_article_archives(parser, token):
     """
@@ -171,9 +198,13 @@ def get_article_archives(parser, token):
     try:
         assert argc == 3 and args[1] == 'as'
     except AssertionError:
-        raise template.TemplateSyntaxError('get_article_archives syntax: {% get_article_archives as varname %}')
+
+        raise template.TemplateSyntaxError(
+            'get_article_archives syntax: '
+            '{% get_article_archives as varname %}')
 
     return GetArticleArchivesNode(args[2])
+
 
 class DivideObjectListByNode(template.Node):
     """
@@ -181,11 +212,13 @@ class DivideObjectListByNode(template.Node):
     fit into, say, a column.
     """
     def __init__(self, object_list, divisor, varname):
+
         self.object_list = template.Variable(object_list)
         self.divisor = template.Variable(divisor)
         self.varname = varname
 
     def render(self, context):
+
         # get the actual object list from the context
         object_list = self.object_list.resolve(context)
 
@@ -195,8 +228,10 @@ class DivideObjectListByNode(template.Node):
         # make sure we don't divide by 0 or some negative number!!!!!!
         assert divisor > 0
 
-        context[self.varname] = int(math.ceil(len(object_list) / float(divisor)))
+        context[self.varname] = int(
+            math.ceil(len(object_list) / float(divisor)))
         return ''
+
 
 def divide_object_list(parser, token):
     """
@@ -209,9 +244,12 @@ def divide_object_list(parser, token):
     try:
         assert argc == 6 and args[2] == 'by' and args[4] == 'as'
     except AssertionError:
-        raise template.TemplateSyntaxError('divide_object_list syntax: {% divide_object_list object_list by divisor as varname %}')
+        raise template.TemplateSyntaxError(
+            'divide_object_list syntax: '
+            '{% divide_object_list object_list by divisor as varname %}')
 
     return DivideObjectListByNode(args[1], args[3], args[5])
+
 
 class GetPageURLNode(template.Node):
     """
@@ -231,8 +269,11 @@ class GetPageURLNode(template.Node):
         try:
             # determine what view we are using based upon the path of this page
             view, args, kwargs = resolve(context['request'].path)
+
         except (Resolver404, KeyError):
+
             raise ValueError('Invalid pagination page.')
+
         else:
             # set the page parameter for this view
             kwargs['page'] = page_num
@@ -241,12 +282,16 @@ class GetPageURLNode(template.Node):
             url = reverse(view, args=args, kwargs=kwargs)
 
         if self.varname:
-            # if we have a varname, put the URL into the context and return nothing
+
+            # if we have a varname, put the URL into the
+            # context and return nothing
             context[self.varname] = url
+
             return ''
 
         # otherwise, return the URL directly
         return url
+
 
 def get_page_url(parser, token):
     """
@@ -260,11 +305,15 @@ def get_page_url(parser, token):
     try:
         assert argc in (2, 4)
     except AssertionError:
-        raise template.TemplateSyntaxError('get_page_url syntax: {% get_page_url page_num as varname %}')
+        raise template.TemplateSyntaxError(
+            'get_page_url syntax: {% get_page_url page_num as varname %}')
 
-    if argc == 4: varname = args[3]
+    if argc == 4:
+
+        varname = args[3]
 
     return GetPageURLNode(args[1], varname)
+
 
 def tag_cloud():
     """Provides the tags with a "weight" attribute to build a tag cloud"""

@@ -28,11 +28,11 @@ MARKUP_MARKDOWN = 'm'
 MARKUP_REST = 'r'
 MARKUP_TEXTILE = 't'
 MARKUP_OPTIONS = getattr(settings, 'ARTICLE_MARKUP_OPTIONS', (
-        (MARKUP_HTML, _('HTML/Plain Text')),
-        (MARKUP_MARKDOWN, _('Markdown')),
-        (MARKUP_REST, _('ReStructured Text')),
-        (MARKUP_TEXTILE, _('Textile'))
-    ))
+    (MARKUP_HTML, _('HTML/Plain Text')),
+    (MARKUP_MARKDOWN, _('Markdown')),
+    (MARKUP_REST, _('ReStructured Text')),
+    (MARKUP_TEXTILE, _('Textile'))
+))
 MARKUP_DEFAULT = getattr(settings, 'ARTICLE_MARKUP_DEFAULT', MARKUP_HTML)
 
 USE_ADDTHIS_BUTTON = getattr(settings, 'USE_ADDTHIS_BUTTON', True)
@@ -40,11 +40,12 @@ ADDTHIS_USE_AUTHOR = getattr(settings, 'ADDTHIS_USE_AUTHOR', True)
 DEFAULT_ADDTHIS_USER = getattr(settings, 'DEFAULT_ADDTHIS_USER', None)
 
 # regex used to find links in an article
-LINK_RE = re.compile('<a.*?href="(.*?)".*?>(.*?)</a>', re.I|re.M)
-TITLE_RE = re.compile('<title.*?>(.*?)</title>', re.I|re.M)
+LINK_RE = re.compile('<a.*?href="(.*?)".*?>(.*?)</a>', re.I | re.M)
+TITLE_RE = re.compile('<title.*?>(.*?)</title>', re.I | re.M)
 TAG_RE = re.compile('[^a-z0-9\-_\+\:\.]?', re.I)
 
 log = logging.getLogger('articles.models')
+
 
 def get_name(user):
     """
@@ -72,6 +73,7 @@ def get_name(user):
     return name
 User.get_name = get_name
 
+
 class Tag(models.Model):
     name = models.CharField(max_length=64, unique=True)
     slug = models.CharField(max_length=64, unique=True, null=True, blank=True)
@@ -81,7 +83,9 @@ class Tag(models.Model):
 
     @staticmethod
     def clean_tag(name):
-        """Replace spaces with dashes, in case someone adds such a tag manually"""
+        """
+        Replace spaces with dashes, in case someone adds such a tag manually
+        """
 
         name = name.replace(' ', '-').encode('ascii', 'ignore')
         name = TAG_RE.sub('', name)
@@ -91,7 +95,9 @@ class Tag(models.Model):
         return clean
 
     def save(self, *args, **kwargs):
-        """Cleans up any characters I don't want in a URL"""
+        """
+        Cleans up any characters I don't want in a URL
+        """
 
         log.debug('Ensuring that tag "%s" has a slug' % (self,))
         self.slug = Tag.clean_tag(self.name)
@@ -103,7 +109,9 @@ class Tag(models.Model):
 
     @property
     def cleaned(self):
-        """Returns the clean version of the tag"""
+        """
+        Returns the clean version of the tag
+        """
 
         return self.slug or Tag.clean_tag(self.name)
 
@@ -113,6 +121,7 @@ class Tag(models.Model):
 
     class Meta:
         ordering = ('name',)
+
 
 class ArticleStatusManager(models.Manager):
 
@@ -124,7 +133,9 @@ class ArticleStatusManager(models.Manager):
         else:
             return default[0]
 
+
 class ArticleStatus(models.Model):
+
     name = models.CharField(max_length=50)
     ordering = models.IntegerField(default=0)
     is_live = models.BooleanField(default=False, blank=True)
@@ -141,6 +152,7 @@ class ArticleStatus(models.Model):
         else:
             return self.name
 
+
 class ArticleManager(models.Manager):
 
     def active(self):
@@ -150,13 +162,15 @@ class ArticleManager(models.Manager):
         """
         now = datetime.now()
         return self.get_query_set().filter(
-                Q(expiration_date__isnull=True) |
-                Q(expiration_date__gte=now),
-                publish_date__lte=now,
-                is_active=True)
+            Q(expiration_date__isnull=True) |
+            Q(expiration_date__gte=now),
+            publish_date__lte=now,
+            is_active=True)
 
     def live(self, user=None):
-        """Retrieves all live articles"""
+        """
+        Retrieves all live articles
+        """
 
         qs = self.active()
 
@@ -174,34 +188,81 @@ MARKUP_HELP = _("""Select the type of markup you are using in this article.
 <li><a href="http://thresholdstate.com/articles/4312/the-textile-reference-manual" target="_blank">Textile Guide</a></li>
 </ul>""")
 
+
 class Article(models.Model):
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique_for_year='publish_date')
-    status = models.ForeignKey(ArticleStatus, default=ArticleStatus.objects.default)
+    status = models.ForeignKey(
+        ArticleStatus, default=ArticleStatus.objects.default)
     author = models.ForeignKey(User)
     sites = models.ManyToManyField(Site, blank=True)
 
-    keywords = models.TextField(blank=True, help_text=_("If omitted, the keywords will be the same as the article tags."))
-    description = models.TextField(blank=True, help_text=_("If omitted, the description will be determined by the first bit of the article's content."))
+    keywords = models.TextField(blank=True, help_text=_(
+        "If omitted, the keywords will be the same as the article tags."))
+    description = models.TextField(blank=True, help_text=_(
+        "If omitted, the description will be determined by the first "
+        "bit of the article's content."))
 
-    markup = models.CharField(max_length=1, choices=MARKUP_OPTIONS, default=MARKUP_DEFAULT, help_text=MARKUP_HELP)
+    markup = models.CharField(
+        max_length=1,
+        choices=MARKUP_OPTIONS,
+        default=MARKUP_DEFAULT,
+        help_text=MARKUP_HELP)
     content = models.TextField()
     rendered_content = models.TextField()
 
-    tags = models.ManyToManyField(Tag, help_text=_('Tags that describe this article'), blank=True)
-    auto_tag = models.BooleanField(default=AUTO_TAG, blank=True, help_text=_('Check this if you want to automatically assign any existing tags to this article based on its content.'))
-    followup_for = models.ManyToManyField('self', symmetrical=False, blank=True, help_text=_('Select any other articles that this article follows up on.'), related_name='followups')
+    tags = models.ManyToManyField(Tag, help_text=_(
+        'Tags that describe this article'), blank=True)
+    auto_tag = models.BooleanField(
+        default=AUTO_TAG,
+        blank=True,
+        help_text=_(
+            'Check this if you want to automatically assign any existing '
+            'tags to this article based on its content.'))
+    followup_for = models.ManyToManyField(
+        'self',
+        symmetrical=False,
+        blank=True,
+        help_text=_(
+            'Select any other articles that this article follows up on.'),
+        related_name='followups')
     related_articles = models.ManyToManyField('self', blank=True)
 
-    publish_date = models.DateTimeField(default=datetime.now, help_text=_('The date and time this article shall appear online.'))
-    expiration_date = models.DateTimeField(blank=True, null=True, help_text=_('Leave blank if the article does not expire.'))
+    publish_date = models.DateTimeField(
+        default=datetime.now,
+        help_text=_(
+            'The date and time this article shall appear online.'))
+    expiration_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text=_(
+            'Leave blank if the article does not expire.'))
 
     is_active = models.BooleanField(default=True, blank=True)
-    login_required = models.BooleanField(blank=True, help_text=_('Enable this if users must login before they can read this article.'))
+    login_required = models.BooleanField(blank=True, help_text=_(
+        'Enable this if users must login before they can read this article.'))
 
-    use_addthis_button = models.BooleanField(_('Show AddThis button'), blank=True, default=USE_ADDTHIS_BUTTON, help_text=_('Check this to show an AddThis bookmark button when viewing an article.'))
-    addthis_use_author = models.BooleanField(_("Use article author's username"), blank=True, default=ADDTHIS_USE_AUTHOR, help_text=_("Check this if you want to use the article author's username for the AddThis button.  Respected only if the username field is left empty."))
-    addthis_username = models.CharField(_('AddThis Username'), max_length=50, blank=True, default=DEFAULT_ADDTHIS_USER, help_text=_('The AddThis username to use for the button.'))
+    use_addthis_button = models.BooleanField(
+        _('Show AddThis button'),
+        blank=True,
+        default=USE_ADDTHIS_BUTTON,
+        help_text=_(
+            'Check this to show an AddThis bookmark button '
+            'when viewing an article.'))
+    addthis_use_author = models.BooleanField(
+        _("Use article author's username"),
+        blank=True,
+        default=ADDTHIS_USE_AUTHOR,
+        help_text=_(
+            "Check this if you want to use the article author's "
+            "username for the AddThis button.  Respected only if the "
+            "username field is left empty."))
+    addthis_username = models.CharField(
+        _('AddThis Username'),
+        max_length=50,
+        blank=True,
+        default=DEFAULT_ADDTHIS_USER,
+        help_text=_('The AddThis username to use for the button.'))
 
     objects = ArticleManager()
 
@@ -216,18 +277,27 @@ class Article(models.Model):
 
         if self.id:
             # mark the article as inactive if it's expired and still active
-            if self.expiration_date and self.expiration_date <= datetime.now() and self.is_active:
+            if (self.expiration_date and
+                    self.expiration_date <= datetime.now() and
+                    self.is_active):
+
                 self.is_active = False
                 self.save()
 
-            if not self.rendered_content or not len(self.rendered_content.strip()):
+            if (not self.rendered_content or
+                    not len(self.rendered_content.strip())):
+
                 self.save()
 
     def __unicode__(self):
+
         return self.title
 
     def save(self, *args, **kwargs):
-        """Renders the article using the appropriate markup language."""
+
+        """
+        Renders the article using the appropriate markup language.
+        """
 
         using = kwargs.get('using', DEFAULT_DB)
 
@@ -248,16 +318,26 @@ class Article(models.Model):
             super(Article, self).save()
 
     def do_render_markup(self):
-        """Turns any markup into HTML"""
+        """
+        Turns any markup into HTML
+        """
 
         original = self.rendered_content
+
         if self.markup == MARKUP_MARKDOWN:
+
             self.rendered_content = markup.markdown(self.content)
+
         elif self.markup == MARKUP_REST:
+
             self.rendered_content = markup.restructuredtext(self.content)
+
         elif self.markup == MARKUP_TEXTILE:
+
             self.rendered_content = markup.textile(self.content)
+
         else:
+
             self.rendered_content = self.content
 
         return (self.rendered_content != original)
@@ -267,8 +347,12 @@ class Article(models.Model):
 
         # if the author wishes to have an "AddThis" button on this article,
         # make sure we have a username to go along with it.
-        if self.use_addthis_button and self.addthis_use_author and not self.addthis_username:
+        if (self.use_addthis_button and
+                self.addthis_use_author and
+                not self.addthis_username):
+
             self.addthis_username = self.author.username
+
             return True
 
         return False
@@ -285,6 +369,7 @@ class Article(models.Model):
                 self.slug = slugify(self.title)
 
             self.slug = self.get_unique_slug(self.slug, using)
+
             return True
 
         return False
@@ -292,12 +377,13 @@ class Article(models.Model):
     def do_tags_to_keywords(self):
         """
         If meta keywords is empty, sets them using the article tags.
-
         Returns True if an additional save is required, False otherwise.
         """
 
         if len(self.keywords.strip()) == 0:
+
             self.keywords = ', '.join([t.name for t in self.tags.all()])
+
             return True
 
         return False
@@ -305,12 +391,13 @@ class Article(models.Model):
     def do_meta_description(self):
         """
         If meta description is empty, sets it to the article's teaser.
-
         Returns True if an additional save is required, False otherwise.
         """
 
         if len(self.description.strip()) == 0:
+
             self.description = self.teaser
+
             return True
 
         return False
@@ -320,29 +407,41 @@ class Article(models.Model):
     def do_auto_tag(self, using=DEFAULT_DB):
         """
         Performs the auto-tagging work if necessary.
-
         Returns True if an additional save is required, False otherwise.
         """
 
         if not self.auto_tag:
-            log.debug('Article "%s" (ID: %s) is not marked for auto-tagging. Skipping.' % (self.title, self.pk))
+
+            log.debug(
+                'Article "%s" (ID: %s) is not marked for auto-tagging.'
+                ' Skipping.' % (self.title, self.pk))
+
             return False
 
         # don't clobber any existing tags!
         existing_ids = [t.id for t in self.tags.all()]
-        log.debug('Article %s already has these tags: %s' % (self.pk, existing_ids))
+        log.debug(
+            'Article %s already has these tags: %s' % (self.pk, existing_ids))
 
         unused = Tag.objects.all()
+
         if hasattr(unused, 'using'):
+
             unused = unused.using(using)
+
         unused = unused.exclude(id__in=existing_ids)
 
         found = False
         to_search = (self.content, self.title, self.description, self.keywords)
+
         for tag in unused:
+
             regex = re.compile(r'\b%s\b' % tag.name, re.I)
+
             if any(regex.search(text) for text in to_search):
-                log.debug('Applying Tag "%s" (%s) to Article %s' % (tag, tag.pk, self.pk))
+
+                log.debug('Applying Tag "%s" (%s) to Article %s' %
+                          (tag, tag.pk, self.pk))
                 self.tags.add(tag)
                 found = True
 
@@ -357,19 +456,24 @@ class Article(models.Model):
         """
 
         if not len(self.sites.all()):
+
             sites = Site.objects.all()
             if hasattr(sites, 'using'):
                 sites = sites.using(using)
             self.sites.add(sites.get(pk=settings.SITE_ID))
+
             return True
 
         return False
 
     def get_unique_slug(self, slug, using=DEFAULT_DB):
-        """Iterates until a unique slug is found"""
+        """
+        Iterates until a unique slug is found
+        """
 
         # we need a publish date before we can do anything meaningful
         if type(self.publish_date) is not datetime:
+
             return slug
 
         orig_slug = slug
@@ -427,8 +531,10 @@ class Article(models.Model):
                             title = title_m.group(1)
                             log.debug('Found title: %s' % (title,))
                     except:
-                        # if anything goes wrong (ie IOError), use the link's text
-                        log.warn('Failed to retrieve the title for "%s"; using link text "%s"' % (url, title))
+                        # if anything goes wrong (ie IOError), use the link's
+                        # text
+                        log.warn(
+                            'Failed to retrieve the title for "%s"; using link text "%s"' % (url, title))
 
                 # cache the page title for a week
                 log.debug('Using "%s" as title for "%s"' % (title, url))
@@ -449,53 +555,77 @@ class Article(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return ('articles_display_article', (self.publish_date.year, self.slug))
+
+        return ('articles_display_article',
+                (self.publish_date.year, self.slug))
 
     def _get_teaser(self):
         """
         Retrieve some part of the article or the article's description.
         """
         if not self._teaser:
+
             if len(self.description.strip()):
+
                 self._teaser = self.description
             else:
-                self._teaser = truncate_html_words(self.rendered_content, WORD_LIMIT)
+
+                self._teaser = truncate_html_words(
+                    self.rendered_content, WORD_LIMIT)
 
         return self._teaser
+
     teaser = property(_get_teaser)
 
     def get_next_article(self):
-        """Determines the next live article"""
+        """
+        Determines the next live article
+        """
 
         if not self._next:
             try:
                 qs = Article.objects.live().exclude(id__exact=self.id)
-                article = qs.filter(publish_date__gte=self.publish_date).order_by('publish_date')[0]
+                article = qs.filter(
+                    publish_date__gte=self.publish_date).order_by(
+                        'publish_date')[0]
             except (Article.DoesNotExist, IndexError):
                 article = None
+
             self._next = article
 
         return self._next
 
     def get_previous_article(self):
-        """Determines the previous live article"""
+        """
+        Determines the previous live article
+        """
 
         if not self._previous:
+
             try:
+
                 qs = Article.objects.live().exclude(id__exact=self.id)
-                article = qs.filter(publish_date__lte=self.publish_date).order_by('-publish_date')[0]
+                article = qs.filter(
+                    publish_date__lte=self.publish_date).order_by(
+                        '-publish_date')[0]
+
             except (Article.DoesNotExist, IndexError):
+
                 article = None
+
             self._previous = article
 
         return self._previous
 
     class Meta:
+
         ordering = ('-publish_date', 'title')
         get_latest_by = 'publish_date'
 
+
 class Attachment(models.Model):
-    upload_to = lambda inst, fn: 'attach/%s/%s/%s' % (datetime.now().year, inst.article.slug, fn)
+    upload_to = lambda inst, fn: 'attach/%s/%s/%s' % (
+        datetime.now().year, inst.article.slug, fn)
 
     article = models.ForeignKey(Article, related_name='attachments')
     attachment = models.FileField(upload_to=upload_to)
@@ -521,4 +651,3 @@ class Attachment(models.Model):
             content_type = 'text_plain'
 
         return content_type
-

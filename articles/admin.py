@@ -8,6 +8,7 @@ from models import Tag, Article, ArticleStatus, Attachment
 
 log = logging.getLogger('articles.admin')
 
+
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name', 'article_count')
 
@@ -15,15 +16,18 @@ class TagAdmin(admin.ModelAdmin):
         return obj.article_set.count()
     article_count.short_description = _('Applied To')
 
+
 class ArticleStatusAdmin(admin.ModelAdmin):
     list_display = ('name', 'is_live')
     list_filter = ('is_live',)
     search_fields = ('name',)
 
+
 class AttachmentInline(admin.TabularInline):
     model = Attachment
     extra = 5
     max_num = 15
+
 
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ('title', 'tag_count', 'status', 'author', 'publish_date',
@@ -39,7 +43,8 @@ class ArticleAdmin(admin.ModelAdmin):
     ]
 
     fieldsets = (
-        (None, {'fields': ('title', 'content', 'tags', 'auto_tag', 'markup', 'status')}),
+        (None, {'fields': (
+            'title', 'content', 'tags', 'auto_tag', 'markup', 'status')}),
         ('Metadata', {
             'fields': ('keywords', 'description',),
             'classes': ('collapse',)
@@ -50,7 +55,9 @@ class ArticleAdmin(admin.ModelAdmin):
         }),
         ('Scheduling', {'fields': ('publish_date', 'expiration_date')}),
         ('AddThis Button Options', {
-            'fields': ('use_addthis_button', 'addthis_use_author', 'addthis_username'),
+            'fields': (
+                'use_addthis_button', 'addthis_use_author',
+                'addthis_username'),
             'classes': ('collapse',)
         }),
         ('Advanced', {
@@ -82,34 +89,44 @@ class ArticleAdmin(admin.ModelAdmin):
                 queryset.update(status=status)
 
             status_func.__name__ = name
-            status_func.short_description = _('Set status of selected to "%s"' % status)
+            status_func.short_description = _(
+                'Set status of selected to "%s"' % status)
             return status_func
 
         for status in ArticleStatus.objects.all():
             name = 'mark_status_%i' % status.id
-            actions[name] = (dynamic_status(name, status), name, _('Set status of selected to "%s"' % status))
+            actions[name] = (
+                dynamic_status(name, status), name,
+                _('Set status of selected to "%s"' % status))
 
         def dynamic_tag(name, tag):
             def status_func(self, request, queryset):
                 for article in queryset.iterator():
-                    log.debug('Dynamic tagging: applying Tag "%s" to Article "%s"' % (tag, article))
+                    log.debug(
+                        'Dynamic tagging: applying Tag "%s" to Article "%s"' %
+                        (tag, article))
                     article.tags.add(tag)
                     article.save()
 
             status_func.__name__ = name
-            status_func.short_description = _('Apply tag "%s" to selected articles' % tag)
+            status_func.short_description = _(
+                'Apply tag "%s" to selected articles' % tag)
             return status_func
 
         for tag in Tag.objects.all():
             name = 'apply_tag_%s' % tag.pk
-            actions[name] = (dynamic_tag(name, tag), name, _('Apply Tag: %s' % (tag.slug,)))
+            actions[name] = (
+                dynamic_tag(name, tag), name,
+                _('Apply Tag: %s' % (tag.slug,)))
 
         return actions
 
     actions = [mark_active, mark_inactive]
 
     def save_model(self, request, obj, form, change):
-        """Set the article's author based on the logged in user and make sure at least one site is selected"""
+        """
+        Set the article's author based on the logged in user and make
+        sure at least one site is selected"""
 
         try:
             author = obj.author
@@ -123,14 +140,19 @@ class ArticleAdmin(admin.ModelAdmin):
         form.cleaned_data['tags'] += list(obj.tags.all())
 
     def queryset(self, request):
-        """Limit the list of articles to article posted by this user unless they're a superuser"""
+        """
+        Limit the list of articles to article posted by this user
+        unless they're a superuser
+        """
 
         if request.user.is_superuser:
+
             return self.model._default_manager.all()
+
         else:
+
             return self.model._default_manager.filter(author=request.user)
 
 admin.site.register(Tag, TagAdmin)
 admin.site.register(Article, ArticleAdmin)
 admin.site.register(ArticleStatus, ArticleStatusAdmin)
-
