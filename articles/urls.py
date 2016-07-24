@@ -23,9 +23,9 @@ urlpatterns += patterns(
     url(r'^page/(?P<page>\d+)/$', views.display_blog_page,
         name='articles_archive_page'),
 
-    url(r'^author/(?P<username>.*)/page/(?P<page>\d+)/$',
+    url(r'^auteur/(?P<username>.*)/page/(?P<page>\d+)/$',
         views.display_blog_page, name='articles_by_author_page'),
-    url(r'^author/(?P<username>.*)/$',
+    url(r'^auteur/(?P<username>.*)/$',
         views.display_blog_page, name='articles_by_author'),
 
     url(r'^(?P<year>\d{4})/(?P<slug>.*)/$',

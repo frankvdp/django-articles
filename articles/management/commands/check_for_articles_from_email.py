@@ -7,7 +7,7 @@ import socket
 import time
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils.translation import ugettext_lazy as _
 
@@ -353,8 +353,9 @@ class Command(BaseCommand):
             name, sender = parseaddr(email['From'])
 
             try:
-                author = User.objects.get(email=sender, is_active=True)
-            except User.DoesNotExist:
+                author = get_user_model().objects.get(
+                    email=sender, is_active=True)
+            except get_user_model().DoesNotExist:
                 # unauthorized sender
                 self.log('Not processing message from unauthorized sender.', 0)
                 continue

@@ -2,19 +2,24 @@
 
 from datetime import datetime, timedelta
 
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import Permission
+from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.client import Client
 
-from models import Article, ArticleStatus, Tag, get_name, MARKUP_HTML, MARKUP_MARKDOWN, MARKUP_REST, MARKUP_TEXTILE
+from models import (
+    Article, ArticleStatus, Tag, get_name, MARKUP_HTML, MARKUP_MARKDOWN,
+    MARKUP_REST, MARKUP_TEXTILE)
+
 
 class ArticleUtilMixin(object):
 
     @property
     def superuser(self):
         if not hasattr(self, '_superuser'):
-            self._superuser = User.objects.filter(is_superuser=True)[0]
+            self._superuser = get_user_model().objects.filter(
+                is_superuser=True)[0]
 
         return self._superuser
 

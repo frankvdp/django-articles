@@ -1,7 +1,6 @@
 import logging
 
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.paginator import Paginator, EmptyPage
 from django.core.urlresolvers import reverse
 from django.contrib.auth import get_user_model
@@ -11,8 +10,6 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from articles.models import Article
 from datetime import datetime
-
-User = get_user_model()
 
 ARTICLE_PAGINATION = getattr(settings, 'ARTICLE_PAGINATION', 20)
 
@@ -30,7 +27,7 @@ def display_blog_page(
     context = {'request': request}
     if username:
         # listing articles by a particular author
-        user = get_object_or_404(User, name=username)
+        user = get_object_or_404(get_user_model(), name=username)
         articles = user.article_set.live(user=request.user)
         template = 'articles/by_author.html'
         context['author'] = user

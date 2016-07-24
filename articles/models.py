@@ -3,40 +3,12 @@ import logging
 
 from django.db import models
 from django.db.models import Q
-from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from autoslug import AutoSlugField
 
 log = logging.getLogger('articles.models')
-
-
-def get_name(user):
-    """
-    Provides a way to fall back to a user's username if their full name has not
-    been entered.
-    """
-
-    key = 'username_for_%s' % user.id
-
-    log.debug('Looking for "%s" in cache (%s)' % (key, user))
-    name = cache.get(key)
-    if not name:
-        log.debug('Name not found')
-
-        if len(user.get_full_name().strip()):
-            log.debug('Using full name')
-            name = user.get_full_name()
-        else:
-            log.debug('Using username')
-            name = user.username
-
-        log.debug('Caching %s as "%s" for a while' % (key, name))
-        cache.set(key, name, 86400)
-
-    return name
-User.get_name = get_name
 
 
 class ArticleStatusManager(models.Manager):
@@ -136,6 +108,11 @@ class Article(models.Model):
     def __str__(self):
 
         return self.title
+
+    @property
+    def word_count(self):
+
+        return len(self.content.split(' '))
 
     @models.permalink
     def get_absolute_url(self):
